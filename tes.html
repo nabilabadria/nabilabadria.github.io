@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pemantauan Tumbuh Kembang Anak</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            width: 50%;
+            max-width: 400px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        header {
+            background-color: plum;
+            color: white;
+            padding: 10px;
+            border-radius: 10px 10px 0 0;
+            font-size: 18px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+        form {
+            margin-top: 20px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: plum;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        button:hover {
+            background-color: #d699c4;
+        }
+        .hidden {
+            display: none;
+        }
+        #errorMessage {
+            color: red;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        @media (max-width: 480px) {
+            .container {
+                width: 90%;
+                max-width: none;
+            }
+        }
+    </style>
+    <script>
+        // Data referensi WHO berdasarkan jenis kelamin dan umur
+        const WHO_REFERENCE = {
+            "Laki-Laki": {
+                12: { median: 9.4, sd: 1.1 },
+                24: { median: 12.2, sd: 1.5 },
+                36: { median: 14.3, sd: 1.8 },
+                48: { median: 16.3, sd: 2.0 },
+                60: { median: 18.3, sd: 2.3 },
+            },
+            "Perempuan": {
+                12: { median: 8.9, sd: 1.0 },
+                24: { median: 11.5, sd: 1.3 },
+                36: { median: 13.9, sd: 1.6 },
+                48: { median: 16.0, sd: 1.8 },
+                60: { median: 18.0, sd: 2.1 },
+            }
+        };
+
+        // Fungsi menghitung Z-score dengan usia terdekat
+        function calculateZScore(bb, umur, gender) {
+            const referenceData = WHO_REFERENCE[gender];
+            if (!referenceData) {
+                return "Jenis kelamin tidak valid.";
+            }
+
+            // Cari usia terdekat jika tidak ada referensi untuk usia tertentu
+            const usiaTersedia = Object.keys(referenceData).map(Number);
+            const usiaTerdekat = usiaTersedia.reduce((prev, curr) => 
+                Math.abs(curr - umur) < Math.abs(prev - umur) ? curr : prev
+            );
+
+            const reference = referenceData[usiaTerdekat];
+            if (!reference) {
+                return "Referensi tidak ditemukan untuk data yang diberikan.";
+            }
+
+            const zScore = (bb - reference.median) / reference.sd;
+            return zScore;
+        }
+
+        // Fungsi klasifikasi status gizi
+        function classifyGizi(zScore) {
+            if (zScore > 3) return "Obesitas";
+            if (zScore > 2) return "Gizi Lebih";
+            if (zScore >= -2) return "Gizi Baik";
+            if (zScore >= -3) return "Gizi Kurang";
+            return "Gizi Buruk";
+        }
+
+        // Fungsi untuk memproses input data dan menghitung status gizi
+        function calculateStatus() {
+            const berat = parseFloat(document.getElementById("berat").value);
+            const umur = parseInt(document.getElementById("umur").value);
+            const gender = document.getElementById("gender").value;
+            const errorMessage = document.getElementById("errorMessage");
+
+            // Validasi input
+            if (isNaN(berat) || berat <= 0 || isNaN(umur) || umur <= 0 || !gender) {
+                errorMessage.innerText = "Masukkan data berat, umur, dan jenis kelamin yang valid.";
+                errorMessage.classList.remove("hidden");
+                return;
+            }
+
+            // Hitung Z-score
+            const zScore = calculateZScore(berat, umur, gender);
+            if (typeof zScore === "string") {
+                errorMessage.innerText = zScore;
+                errorMessage.classList.remove("hidden");
+                return;
+            }
+
+            errorMessage.classList.add("hidden");
+            const status = classifyGizi(zScore);
+
+            // Tampilkan hasil status gizi
+            document.getElementById("statusGizi").innerText = `Status Gizi Balita Anda: ${status}`;
+            document.getElementById("inputPage").classList.add("hidden");
+            document.getElementById("resultPage").classList.remove("hidden");
+        }
+
+        // Fungsi untuk reset form
+        function resetForm() {
+            document.getElementById("berat").value = "";
+            document.getElementById("umur").value = "";
+            document.getElementById("gender").value = "";
+            document.getElementById("inputPage").classList.remove("hidden");
+            document.getElementById("resultPage").classList.add("hidden");
+        }
+    </script>
+</head>
+<body>
+    <!-- Halaman Menu Utama -->
+    <div id="menuPage" class="container">
+        <header>
+            <h1>Pemantauan Status Gizi Balita</h1>
+        </header>
+        <p>Selamat datang di aplikasi Pemantauan Tumbuh Kembang Anak. Pilih menu berikut untuk melanjutkan:</p>
+        <button class="menu-button" onclick="document.getElementById('menuPage').classList.add('hidden'); document.getElementById('inputPage').classList.remove('hidden');">Cek Status Gizi</button>
+    </div>
+
+    <!-- Halaman Input Data -->
+    <div id="inputPage" class="container hidden">
+        <header>
+            <h1>Input Data Balita</h1>
+        </header>
+        <form onsubmit="event.preventDefault(); calculateStatus();">
+            <label for="gender">Jenis Kelamin:</label>
+            <select id="gender">
+                <option value="">Pilih Jenis Kelamin</option>
+                <option value="Laki-Laki">Laki-Laki</option>
+                <option value="Perempuan">Perempuan</option>
+            </select>
+
+            <label for="nama">Nama Anak</label>
+            <input type="text" id="nama" name="nama" placeholder="Masukkan nama anak">
+
+            <label for="umur">Umur (Bulan):</label>
+            <input type="number" id="umur" placeholder="Masukkan umur" min="1">
+
+            <label for="berat">Berat Badan (kg):</label>
+            <input type="number" id="berat" step="0.1" placeholder="Masukkan berat badan">
+
+            <p id="errorMessage" class="hidden"></p>
+
+            <button type="submit">Cek Status Gizi</button>
+        </form>
+    </div>
+
+    <!-- Halaman Hasil Status Gizi -->
+    <div id="resultPage" class="container hidden">
+        <header>
+            <h1>Hasil Status Gizi</h1>
+        </header>
+        <p id="statusGizi">Status Gizi Balita Anda: </p>
+        <button onclick="resetForm()">Coba Lagi</button>
+    </div>
+</body>
+</html>
